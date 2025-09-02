@@ -10,9 +10,10 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVSh
 CACHE_TTL = 900  # 15 min
 
 # ===== Cores pastéis e contorno =====
-COLOR_NO   = "#FFEBEE"  # vermelho bem claro (Não/0)
-COLOR_YES  = "#E8F5E9"  # verde   bem claro (Sim/1)
-GRID_STROKE = "#E0E0E0"  # contorno das células
+COLOR_NO   = "#FFEBEE"   
+COLOR_YES  = "#A5D6A7"   
+GRID_STROKE = "#E0E0E0"
+
 # ==============================================
 
 st.set_page_config(page_title="Movimentação × Data", layout="wide")
@@ -258,3 +259,4 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: NÃO=vermelho claro, SIM=verde claro.")
+
