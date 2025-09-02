@@ -5,7 +5,7 @@ from datetime import date
 
 # -------------------------------------------------
 # CONFIGURE AQUI:
-CSV_URL = "https://docs.google.com/spreadsheets/d/1Wdh3xVKuqCcdS939h6816hVixy5pb6XmQBoBE6RS-8k/export?format=csv&gid=0"
+CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 DATA_COL = "Data"
 CLIENTE_COL = "Cliente"
 MOV_COL = "Teve movimentação"   # exatamente como no cabeçalho da planilha
@@ -120,4 +120,5 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Atualiza com cache de 15 min.")
+
 
