@@ -28,22 +28,19 @@ def to_bin(v) -> int:
     return 1 if s in {"sim","s","1","true","t","yes","y","ok","x"} else 0
 
 def try_header_from_first_row(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Se a primeira linha parece conter cabeçalhos (ex.: 'Data','Cliente','Teve movimentação'),
-    usa-a como header.
-    """
+    """Se a 1ª linha parece conter cabeçalhos, usa-a como header."""
     if df.empty:
         return df
     row0 = df.iloc[0].astype(str).tolist()
     row0_norm = [norm(x) for x in row0]
     expected_hits = {"data","cliente","empresa","teve movimentacao","teve movimentação","movimentacao","movimentação","mov"}
     if any(x in expected_hits for x in row0_norm):
-        # usa a linha 0 como cabeçalho
         df2 = df.copy()
         df2.columns = df2.iloc[0]
         df2 = df2.iloc[1:].reset_index(drop=True)
         return df2
     return df
+
 # --------------------------
 
 @st.cache_data(ttl=CACHE_TTL)
@@ -68,12 +65,11 @@ def load_data():
                 return colmap[key]
         return None
 
-    # tenta achar diretamente
     date_col    = pick(["Data", "date", "DATA", "Dia"])
     cliente_col = pick(["Cliente", "Empresa", "Cliente/Empresa", "Nome do Cliente", "Client"])
     mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
 
-    # fallbacks por inferência
+    # ---- fallbacks por inferência ----
     def infer_date_col(df: pd.DataFrame) -> str | None:
         best_col, best_ratio = None, 0.0
         for c in df.columns:
@@ -98,13 +94,11 @@ def load_data():
         return candidates[0][1] if candidates and candidates[0][0] >= 0.5 else None
 
     def infer_client_col(df: pd.DataFrame, exclude: set) -> str | None:
-        # prioridade para nomes contendo 'cliente' ou 'empresa'
         for c in df.columns:
             if c in exclude: 
                 continue
             if re.search(r"(cliente|empresa)", norm(c)):
                 return c
-        # fallback: primeira coluna de texto com boa cardinalidade
         best, best_card = None, 0
         for c in df.columns:
             if c in exclude or pd.api.types.is_numeric_dtype(df[c]):
@@ -135,17 +129,20 @@ def load_data():
             "Dica: ajuste os nomes na planilha OU adicione variações no código."
         )
 
-    # 5) constrói um DF padronizado sem depender de rename prévio
+    # 5) constrói DF padronizado
     out = pd.DataFrame({
         "Data":    pd.to_datetime(base[date_col].astype(str), dayfirst=True, errors="coerce"),
         "Cliente": base[cliente_col].astype(str).str.strip(),
         "Mov":     base[mov_col].map(to_bin).astype(int)
     })
 
-    # 6) limpa e consolida duplicatas por dia/cliente
+    # 6) limpa e AGRUPA preservando o nome 'Data'
     out = out.dropna(subset=["Data", "Cliente"])
-    out = out.groupby([out["Data"].dt.date, "Cliente"], as_index=False)["Mov"].max()
-    out["Data"] = pd.to_datetime(out["Data"])
+    out["Data"] = out["Data"].dt.floor("D")              # normaliza para o dia (sem hora)
+    out = out.groupby(["Data", "Cliente"], as_index=False)["Mov"].max()
+    # (não usar .dt.date como chave anônima)
+
+    # 7) ordena
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
 # ===== Carrega com tratamento de erro =====
