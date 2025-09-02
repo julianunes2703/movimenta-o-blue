@@ -2,9 +2,10 @@ import pandas as pd
 import streamlit as st
 import altair as alt
 import unicodedata
+import re
 
 # ===== URL CSV PUBLICADO (não use pubhtml) =====
-# Se precisar outra aba, troque o gid=0 para o gid da aba correta.
+# Troque o gid se a aba correta não for a primeira
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 CACHE_TTL = 900  # 15 min
 # ==============================================
@@ -12,30 +13,82 @@ CACHE_TTL = 900  # 15 min
 st.set_page_config(page_title="Movimentação × Data", layout="wide")
 st.title("Movimentação por Cliente × Data")
 
+# ---------- util ----------
 def norm(s: str) -> str:
     """normaliza: sem acento, minúsculo, sem espaços extras"""
-    if s is None: 
+    if s is None:
         return ""
     s = str(s)
     s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
     return s.strip().lower()
 
 def to_bin(v) -> int:
-    """converte texto livre para 1/0 (evita .strip em Series)"""
+    """converte texto livre para 1/0"""
     s = str(v).strip().lower()
-    return 1 if s in {"sim","s","1","true","yes","y","ok","x"} else 0
+    return 1 if s in {"sim","s","1","true","t","yes","y","ok","x"} else 0
+
+def infer_date_col(df: pd.DataFrame) -> str | None:
+    """tenta achar a coluna que mais parece data"""
+    best_col, best_ratio = None, 0.0
+    for c in df.columns:
+        # ignora colunas numéricas puras
+        if pd.api.types.is_numeric_dtype(df[c]):
+            continue
+        # tenta parsear 200 primeiras linhas
+        sample = pd.to_datetime(df[c].astype(str), dayfirst=True, errors="coerce").head(200)
+        ratio = sample.notna().mean()
+        if ratio > best_ratio:
+            best_col, best_ratio = c, ratio
+    return best_col if best_ratio >= 0.5 else None  # precisa ser "majoritariamente" data
+
+def infer_mov_col(df: pd.DataFrame, exclude: set) -> str | None:
+    """tenta achar coluna de movimentação por valores típicos (sim/não/1/0)"""
+    candidates = []
+    for c in df.columns:
+        if c in exclude:
+            continue
+        series = df[c].astype(str).str.strip().str.lower()
+        # score por presença de valores típicos
+        good = series.isin({"sim","s","nao","não","n","0","1","true","false","t","f","yes","y","no"})
+        score = good.mean()
+        candidates.append((score, c))
+    candidates.sort(reverse=True)
+    return candidates[0][1] if candidates and candidates[0][0] >= 0.5 else None
+
+def infer_client_col(df: pd.DataFrame, exclude: set) -> str | None:
+    """escolhe coluna de 'cliente/empresa' (texto, boa cardinalidade)"""
+    # preferir nomes que contenham 'cliente' ou 'empresa'
+    for c in df.columns:
+        if c in exclude:
+            continue
+        if re.search(r"(cliente|empresa)", norm(c)):
+            return c
+    # fallback: primeira coluna de texto não excluída com cardinalidade razoável
+    best = None
+    best_card = 0
+    for c in df.columns:
+        if c in exclude:
+            continue
+        if pd.api.types.is_numeric_dtype(df[c]):
+            continue
+        card = df[c].nunique(dropna=True)
+        if 1 < card < len(df) and card > best_card:
+            best, best_card = c, card
+    return best
+# --------------------------
 
 @st.cache_data(ttl=CACHE_TTL)
 def load_data():
-    # 1) Lê o CSV publicado
+    # 1) lê CSV
     df = pd.read_csv(CSV_URL)
 
-    # 2) Debug (colunas + amostra)
+    # 2) debug
     with st.expander("🔧 Debug (colunas e primeiras linhas)"):
+        st.write("URL CSV:", CSV_URL)
         st.write("Colunas do CSV:", list(df.columns))
         st.dataframe(df.head())
 
-    # 3) Auto-detecção de colunas por similaridade
+    # 3) mapeia por nome "parecido"
     colmap = {norm(c): c for c in df.columns}
 
     def pick(candidates):
@@ -45,45 +98,56 @@ def load_data():
                 return colmap[key]
         return None
 
-    date_col    = pick(["Data", "date", "DATA", "Dia"])
+    date_col = pick(["Data", "date", "DATA", "Dia"])
     cliente_col = pick(["Cliente", "Empresa", "Cliente/Empresa", "Nome do Cliente", "Client"])
-    mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
+    mov_col = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
 
-    missing = []
-    if not date_col:    missing.append("Data")
-    if not cliente_col: missing.append("Cliente/Empresa")
-    if not mov_col:     missing.append("Teve movimentação (Sim/Não)")
-
-    if missing:
+    # Fallbacks robustos
+    if not date_col:
+        date_col = infer_date_col(df)
+    if not date_col:
         raise ValueError(
-            "Não encontrei as colunas esperadas: "
-            + ", ".join(missing)
-            + f". Colunas no CSV: {list(df.columns)}.\n"
-            "Dica: ajuste os nomes na planilha OU adicione variações nas listas acima."
+            "Não encontrei a coluna de Data. Ajuste o cabeçalho na planilha (ex.: 'Data') "
+            "ou publique a aba correta (gid)."
         )
 
-    # 4) Padroniza nomes
+    if not cliente_col:
+        cliente_col = infer_client_col(df, exclude={date_col})
+    if not cliente_col:
+        raise ValueError(
+            "Não encontrei a coluna de Cliente/Empresa. Ajuste o cabeçalho (ex.: 'Cliente' ou 'Empresa')."
+        )
+
+    if not mov_col:
+        mov_col = infer_mov_col(df, exclude={date_col, cliente_col})
+    if not mov_col:
+        raise ValueError(
+            "Não encontrei a coluna de 'Teve movimentação'. Use algo como 'Teve movimentação'/'Movimentação'/'Mov' "
+            "com valores 'Sim/Não' (ou 1/0)."
+        )
+
+    # 4) padroniza nomes
     df = df.rename(columns={date_col: "Data", cliente_col: "Cliente", mov_col: "MovRaw"})
 
-    # 5) Converte Data
-    df["Data"] = pd.to_datetime(df["Data"], dayfirst=True, errors="coerce")
+    # 5) parse da Data
+    df["Data"] = pd.to_datetime(df["Data"].astype(str), dayfirst=True, errors="coerce")
 
-    # 6) Converte Sim/Não em 1/0 (sem .strip direto na Series)
+    # 6) Sim/Não -> 1/0
     df["Mov"] = df["MovRaw"].map(to_bin).astype(int)
 
-    # 7) Limpa e consolida duplicatas por dia/cliente
+    # 7) limpa e consolida duplicatas por dia/cliente
     df = df.dropna(subset=["Data", "Cliente"])
     df = df.groupby([df["Data"].dt.date, "Cliente"], as_index=False)["Mov"].max()
     df["Data"] = pd.to_datetime(df["Data"])
 
+    # 8) ordena
     return df.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
-# ===== Carrega dados =====
+# ===== Carrega com tratamento de erro =====
 try:
     df = load_data()
 except Exception as e:
     st.error("❌ Falha ao carregar os dados. Confira o gid/URL e os cabeçalhos.")
-    st.code(CSV_URL)
     st.exception(e)
     st.stop()
 
