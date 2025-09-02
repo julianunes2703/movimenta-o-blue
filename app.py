@@ -140,7 +140,6 @@ def load_data():
     out = out.dropna(subset=["Data", "Cliente"])
     out["Data"] = out["Data"].dt.floor("D")              # normaliza para o dia (sem hora)
     out = out.groupby(["Data", "Cliente"], as_index=False)["Mov"].max()
-    # (não usar .dt.date como chave anônima)
 
     # 7) ordena
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
@@ -170,38 +169,88 @@ clientes = sorted(dfp["Cliente"].unique().tolist())
 sel = st.multiselect("Filtrar clientes (opcional)", clientes, default=clientes)
 dfp = dfp[dfp["Cliente"].isin(sel)]
 
-# ===== Garante grade completa (datas × clientes) =====
-all_dates   = pd.date_range(start, end, freq="D")
-all_clients = sorted(dfp["Cliente"].unique().tolist())
-if not all_clients:
-    st.info("Nenhum cliente no período/filtro selecionado.")
-    st.stop()
+# ===== Abas: Diário | Semanal =====
+tab_dia, tab_sem = st.tabs(["📅 Por dia", "🗓️ Semanal (Seg–Sex)"])
 
-grid = pd.MultiIndex.from_product([all_dates, all_clients], names=["Data", "Cliente"]).to_frame(index=False)
-data_final = grid.merge(dfp[["Data", "Cliente", "Mov"]], on=["Data", "Cliente"], how="left")
-data_final["Mov"] = data_final["Mov"].fillna(0).astype(int)
+# ---------- Heatmap diário ----------
+with tab_dia:
+    # Garante grade completa (datas × clientes)
+    all_dates   = pd.date_range(start, end, freq="D")
+    all_clients = sorted(dfp["Cliente"].unique().tolist())
+    if not all_clients:
+        st.info("Nenhum cliente no período/filtro selecionado.")
+    else:
+        grid = pd.MultiIndex.from_product([all_dates, all_clients], names=["Data", "Cliente"]).to_frame(index=False)
+        data_final = grid.merge(dfp[["Data", "Cliente", "Mov"]], on=["Data", "Cliente"], how="left")
+        data_final["Mov"] = data_final["Mov"].fillna(0).astype(int)
 
-# ===== Heatmap =====
-height = min(24 * max(1, len(all_clients)) + 80, 1000)
+        height = min(24 * max(1, len(all_clients)) + 80, 1000)
 
-chart = alt.Chart(data_final).mark_rect().encode(
-    x=alt.X("yearmonthdate(Data):O", title="Data"),
-    y=alt.Y("Cliente:N", sort=all_clients, title="Cliente"),
-    color=alt.Color("Mov:Q",
-                    scale=alt.Scale(domain=[0, 1], range=["#ffffff", "#34a853"]),
-                    legend=None),
-    tooltip=[
-        alt.Tooltip("yearmonthdate(Data):O", title="Data"),
-        alt.Tooltip("Cliente:N"),
-        alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")
-    ]
-).properties(height=height)
+        chart = alt.Chart(data_final).mark_rect().encode(
+            x=alt.X("yearmonthdate(Data):O", title="Data"),
+            y=alt.Y("Cliente:N", sort=all_clients, title="Cliente"),
+            # vermelho (Não/0) e verde (Sim/1)
+            color=alt.Color("Mov:Q",
+                            scale=alt.Scale(domain=[0, 1], range=["#EA4335", "#34A853"]),
+                            legend=None),
+            tooltip=[
+                alt.Tooltip("yearmonthdate(Data):O", title="Data"),
+                alt.Tooltip("Cliente:N"),
+                alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")
+            ]
+        ).properties(height=height)
 
-st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
+
+# ---------- Grade semanal (Seg–Sex) ----------
+with tab_sem:
+    st.subheader("Visão semanal (Seg–Sex)")
+
+    if dfp.empty:
+        st.info("Não há dados no período/cliente(s) selecionado(s).")
+    else:
+        # semanas do período filtrado (começando na segunda)
+        semanas = sorted(dfp["Data"].dt.to_period("W-MON").unique())
+        sem_padrao = max(semanas)
+        idx_padrao = semanas.index(sem_padrao)
+        sem_sel = st.selectbox(
+            "Semana (início na segunda-feira)",
+            options=semanas,
+            index=idx_padrao,
+            format_func=lambda p: f"{p.start_time.date()} – {(p.start_time + pd.Timedelta(days=4)).date()}"
+        )
+
+        dfw = dfp[dfp["Data"].dt.to_period("W-MON") == sem_sel].copy()
+        dfw["dow"] = dfw["Data"].dt.weekday  # 0=Seg, 6=Dom
+        dfw = dfw[dfw["dow"] <= 4]           # apenas Seg–Sex
+
+        clientes_semana = sorted(dfw["Cliente"].unique().tolist()) or sorted(dfp["Cliente"].unique().tolist())
+
+        # grade Cliente × dia da semana 0..4
+        grid = pd.MultiIndex.from_product([clientes_semana, range(5)], names=["Cliente", "dow"]).to_frame(index=False)
+        agg = dfw.groupby(["Cliente", "dow"], as_index=False)["Mov"].max()
+        mat = grid.merge(agg, on=["Cliente", "dow"], how="left").fillna({"Mov": 0})
+        mat["Dia"] = mat["dow"].map({0: "Seg.", 1: "Ter.", 2: "Qua.", 3: "Qui.", 4: "Sex."})
+
+        height = min(24 * max(1, len(clientes_semana)) + 80, 1000)
+
+        chart_semana = alt.Chart(mat).mark_rect().encode(
+            x=alt.X("Dia:N", sort=["Seg.", "Ter.", "Qua.", "Qui.", "Sex."], title=""),
+            y=alt.Y("Cliente:N", sort=clientes_semana, title=""),
+            # vermelho (Não/0) e verde (Sim/1)
+            color=alt.Color("Mov:Q",
+                            scale=alt.Scale(domain=[0, 1], range=["#EA4335", "#34A853"]),
+                            legend=None),
+            tooltip=[alt.Tooltip("Cliente:N"), alt.Tooltip("Dia:N"),
+                     alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")]
+        ).properties(height=height)
+
+        st.altair_chart(chart_semana, use_container_width=True)
 
 # ===== Botão de recarregar =====
+st.divider()
 if st.button("Atualizar dados agora"):
     load_data.clear()
     st.rerun()
 
-st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso.")
+st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: vermelho=Não (0), verde=Sim (1).")
