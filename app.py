@@ -10,8 +10,8 @@ CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVSh
 CACHE_TTL = 900  # 15 min
 
 # ===== Cores pastéis e contorno =====
-COLOR_NO   = "#FFEBEE"   
-COLOR_YES  = "#A5D6A7"   
+COLOR_NO   = "#87CEEB"   
+COLOR_YES  = "#0000CD"   
 GRID_STROKE = "#E0E0E0"
 
 # ==============================================
@@ -259,4 +259,5 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: NÃO=vermelho claro, SIM=verde claro.")
+
 
