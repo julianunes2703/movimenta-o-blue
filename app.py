@@ -8,6 +8,11 @@ import re
 # Troque o gid se a aba certa não for a primeira.
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 CACHE_TTL = 900  # 15 min
+
+# ===== Cores pastéis e contorno =====
+COLOR_NO   = "#FFEBEE"  # vermelho bem claro (Não/0)
+COLOR_YES  = "#E8F5E9"  # verde   bem claro (Sim/1)
+GRID_STROKE = "#E0E0E0"  # contorno das células
 # ==============================================
 
 st.set_page_config(page_title="Movimentação × Data", layout="wide")
@@ -70,7 +75,7 @@ def load_data():
     mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
 
     # ---- fallbacks por inferência ----
-    def infer_date_col(df: pd.DataFrame) -> str | None:
+    def infer_date_col(df: pd.DataFrame):
         best_col, best_ratio = None, 0.0
         for c in df.columns:
             if pd.api.types.is_numeric_dtype(df[c]):
@@ -81,7 +86,7 @@ def load_data():
                 best_col, best_ratio = c, ratio
         return best_col if best_ratio >= 0.5 else None
 
-    def infer_mov_col(df: pd.DataFrame, exclude: set) -> str | None:
+    def infer_mov_col(df: pd.DataFrame, exclude: set):
         candidates = []
         for c in df.columns:
             if c in exclude:
@@ -93,7 +98,7 @@ def load_data():
         candidates.sort(reverse=True)
         return candidates[0][1] if candidates and candidates[0][0] >= 0.5 else None
 
-    def infer_client_col(df: pd.DataFrame, exclude: set) -> str | None:
+    def infer_client_col(df: pd.DataFrame, exclude: set):
         for c in df.columns:
             if c in exclude: 
                 continue
@@ -174,7 +179,6 @@ tab_dia, tab_sem = st.tabs(["📅 Por dia", "🗓️ Semanal (Seg–Sex)"])
 
 # ---------- Heatmap diário ----------
 with tab_dia:
-    # Garante grade completa (datas × clientes)
     all_dates   = pd.date_range(start, end, freq="D")
     all_clients = sorted(dfp["Cliente"].unique().tolist())
     if not all_clients:
@@ -186,13 +190,14 @@ with tab_dia:
 
         height = min(24 * max(1, len(all_clients)) + 80, 1000)
 
-        chart = alt.Chart(data_final).mark_rect().encode(
+        chart = alt.Chart(data_final).mark_rect(stroke=GRID_STROKE, strokeWidth=0.7).encode(
             x=alt.X("yearmonthdate(Data):O", title="Data"),
             y=alt.Y("Cliente:N", sort=all_clients, title="Cliente"),
-            # vermelho (Não/0) e verde (Sim/1)
-            color=alt.Color("Mov:Q",
-                            scale=alt.Scale(domain=[0, 1], range=["#EA4335", "#34A853"]),
-                            legend=None),
+            color=alt.Color(
+                "Mov:Q",
+                scale=alt.Scale(domain=[0, 1], range=[COLOR_NO, COLOR_YES]),
+                legend=None
+            ),
             tooltip=[
                 alt.Tooltip("yearmonthdate(Data):O", title="Data"),
                 alt.Tooltip("Cliente:N"),
@@ -209,7 +214,6 @@ with tab_sem:
     if dfp.empty:
         st.info("Não há dados no período/cliente(s) selecionado(s).")
     else:
-        # semanas do período filtrado (começando na segunda)
         semanas = sorted(dfp["Data"].dt.to_period("W-MON").unique())
         sem_padrao = max(semanas)
         idx_padrao = semanas.index(sem_padrao)
@@ -226,7 +230,6 @@ with tab_sem:
 
         clientes_semana = sorted(dfw["Cliente"].unique().tolist()) or sorted(dfp["Cliente"].unique().tolist())
 
-        # grade Cliente × dia da semana 0..4
         grid = pd.MultiIndex.from_product([clientes_semana, range(5)], names=["Cliente", "dow"]).to_frame(index=False)
         agg = dfw.groupby(["Cliente", "dow"], as_index=False)["Mov"].max()
         mat = grid.merge(agg, on=["Cliente", "dow"], how="left").fillna({"Mov": 0})
@@ -234,13 +237,14 @@ with tab_sem:
 
         height = min(24 * max(1, len(clientes_semana)) + 80, 1000)
 
-        chart_semana = alt.Chart(mat).mark_rect().encode(
+        chart_semana = alt.Chart(mat).mark_rect(stroke=GRID_STROKE, strokeWidth=0.7).encode(
             x=alt.X("Dia:N", sort=["Seg.", "Ter.", "Qua.", "Qui.", "Sex."], title=""),
             y=alt.Y("Cliente:N", sort=clientes_semana, title=""),
-            # vermelho (Não/0) e verde (Sim/1)
-            color=alt.Color("Mov:Q",
-                            scale=alt.Scale(domain=[0, 1], range=["#EA4335", "#34A853"]),
-                            legend=None),
+            color=alt.Color(
+                "Mov:Q",
+                scale=alt.Scale(domain=[0, 1], range=[COLOR_NO, COLOR_YES]),
+                legend=None
+            ),
             tooltip=[alt.Tooltip("Cliente:N"), alt.Tooltip("Dia:N"),
                      alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")]
         ).properties(height=height)
@@ -253,4 +257,4 @@ if st.button("Atualizar dados agora"):
     load_data.clear()
     st.rerun()
 
-st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: vermelho=Não (0), verde=Sim (1).")
+st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: NÃO=vermelho claro, SIM=verde claro.")
