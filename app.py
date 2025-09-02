@@ -4,6 +4,7 @@ import altair as alt
 import unicodedata
 
 # ===== URL CSV PUBLICADO (não use pubhtml) =====
+# Se precisar outra aba, troque o gid=0 para o gid da aba correta.
 CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 CACHE_TTL = 900  # 15 min
 # ==============================================
@@ -13,22 +14,28 @@ st.title("Movimentação por Cliente × Data")
 
 def norm(s: str) -> str:
     """normaliza: sem acento, minúsculo, sem espaços extras"""
-    if s is None: return ""
+    if s is None: 
+        return ""
     s = str(s)
     s = "".join(c for c in unicodedata.normalize("NFD", s) if unicodedata.category(c) != "Mn")
     return s.strip().lower()
+
+def to_bin(v) -> int:
+    """converte texto livre para 1/0 (evita .strip em Series)"""
+    s = str(v).strip().lower()
+    return 1 if s in {"sim","s","1","true","yes","y","ok","x"} else 0
 
 @st.cache_data(ttl=CACHE_TTL)
 def load_data():
     # 1) Lê o CSV publicado
     df = pd.read_csv(CSV_URL)
 
-    # 2) Mostra colunas e amostra para debug
+    # 2) Debug (colunas + amostra)
     with st.expander("🔧 Debug (colunas e primeiras linhas)"):
         st.write("Colunas do CSV:", list(df.columns))
         st.dataframe(df.head())
 
-    # 3) Tenta achar as colunas por similaridade
+    # 3) Auto-detecção de colunas por similaridade
     colmap = {norm(c): c for c in df.columns}
 
     def pick(candidates):
@@ -38,7 +45,6 @@ def load_data():
                 return colmap[key]
         return None
 
-    # Alvos (você pode adicionar variações aqui se quiser)
     date_col    = pick(["Data", "date", "DATA", "Dia"])
     cliente_col = pick(["Cliente", "Empresa", "Cliente/Empresa", "Nome do Cliente", "Client"])
     mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
@@ -62,12 +68,8 @@ def load_data():
     # 5) Converte Data
     df["Data"] = pd.to_datetime(df["Data"], dayfirst=True, errors="coerce")
 
-    # 6) Converte Sim/Não em 1/0 (aceitando várias formas)
-    df["Mov"] = (
-        df["MovRaw"].astype(str).strip().str.lower().isin(
-            ["sim", "s", "1", "true", "yes", "y", "ok", "x"]
-        )
-    ).astype(int)
+    # 6) Converte Sim/Não em 1/0 (sem .strip direto na Series)
+    df["Mov"] = df["MovRaw"].map(to_bin).astype(int)
 
     # 7) Limpa e consolida duplicatas por dia/cliente
     df = df.dropna(subset=["Data", "Cliente"])
