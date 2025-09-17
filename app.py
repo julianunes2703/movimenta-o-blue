@@ -13,6 +13,9 @@ COLOR_NO   = "#87CEEB"
 COLOR_YES  = "#0000CD"   
 GRID_STROKE = "#E0E0E0"
 
+# ===== Clientes excluídos =====
+CLIENTES_EXCLUIDOS = {"XRally"}   # coloque aqui outros clientes que não devem aparecer
+
 # ==============================================
 
 st.set_page_config(page_title="Movimentação × Data", layout="wide")
@@ -75,6 +78,10 @@ def load_data():
     out["Semana"] = out["Data"] - pd.to_timedelta(out["Data"].dt.weekday, unit="D")
 
     out = out.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
+
+    # 🚫 Remove clientes excluídos
+    out = out[~out["Cliente"].isin(CLIENTES_EXCLUIDOS)]
+
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
 # ===== Carrega =====
@@ -101,6 +108,25 @@ dfp = df.loc[mask].copy()
 clientes = sorted(dfp["Cliente"].unique().tolist())
 sel = st.multiselect("Filtrar clientes (opcional)", clientes, default=clientes)
 dfp = dfp[dfp["Cliente"].isin(sel)]
+
+# ===== KPIs principais =====
+st.divider()
+st.header("📌 Resumo do período selecionado")
+
+if not dfp.empty:
+    total_clientes = dfp["Cliente"].nunique()
+    total_mov = dfp["Mov"].sum()
+    media_mov = total_mov / total_clientes if total_clientes > 0 else 0
+    dia_top = dfp.groupby("Data")["Mov"].sum().idxmax().date()
+    mov_top = dfp.groupby("Data")["Mov"].sum().max()
+
+    c1, c2, c3, c4 = st.columns(4)
+    c1.metric("Clientes ativos", total_clientes)
+    c2.metric("Total de movimentações", total_mov)
+    c3.metric("Média por cliente", f"{media_mov:.1f}")
+    c4.metric("Dia com mais mov.", f"{dia_top} ({mov_top})")
+else:
+    st.info("Nenhum dado para o período selecionado.")
 
 # ===== Abas =====
 tab_dia, tab_sem, tab_rank = st.tabs(["📅 Por dia", "🗓️ Semanal (Seg–Sex)", "🏆 Ranking semanal"])
@@ -198,31 +224,6 @@ with tab_rank:
         with col2:
             st.markdown("### 🔻 Menos movimentações")
             st.dataframe(resumo.tail(10).sort_values("Mov", ascending=True))
-
-# ===== Tendência =====
-st.divider()
-st.header("📊 Tendência de movimentações")
-
-if not dfp.empty:
-    # --- tendência diária
-    trend_day = dfp.groupby("Data", as_index=False)["Mov"].sum()
-    chart_trend_day = alt.Chart(trend_day).mark_line(point=True).encode(
-        x=alt.X("Data:T", title="Data"),
-        y=alt.Y("Mov:Q", title="Total de movimentações"),
-        tooltip=["Data:T", "Mov:Q"]
-    ).properties(title="Tendência diária")
-
-    st.altair_chart(chart_trend_day, use_container_width=True)
-
-    # --- tendência semanal
-    trend_week = dfp.groupby("Semana", as_index=False)["Mov"].sum()
-    chart_trend_week = alt.Chart(trend_week).mark_bar().encode(
-        x=alt.X("Semana:T", title="Semana (início na segunda)"),
-        y=alt.Y("Mov:Q", title="Total de movimentações"),
-        tooltip=["Semana:T", "Mov:Q"]
-    ).properties(title="Tendência semanal")
-
-    st.altair_chart(chart_trend_week, use_container_width=True)
 
 # ===== Alertas =====
 st.divider()
