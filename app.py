@@ -49,12 +49,6 @@ def load_data():
     base = pd.read_csv(CSV_URL)
     base = try_header_from_first_row(base)
 
-    # debug
-    with st.expander("🔧 Debug (colunas e primeiras linhas)"):
-        st.write("URL CSV:", CSV_URL)
-        st.write("Colunas do CSV:", list(base.columns))
-        st.dataframe(base.head())
-
     colmap = {norm(c): c for c in base.columns}
 
     def pick(candidates):
@@ -68,64 +62,6 @@ def load_data():
     cliente_col = pick(["Cliente", "Empresa", "Cliente/Empresa", "Nome do Cliente", "Client"])
     mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
 
-    def infer_date_col(df: pd.DataFrame):
-        best_col, best_ratio = None, 0.0
-        for c in df.columns:
-            if pd.api.types.is_numeric_dtype(df[c]):
-                continue
-            sample = pd.to_datetime(df[c].astype(str), dayfirst=True, errors="coerce").head(200)
-            ratio = sample.notna().mean()
-            if ratio > best_ratio:
-                best_col, best_ratio = c, ratio
-        return best_col if best_ratio >= 0.5 else None
-
-    def infer_mov_col(df: pd.DataFrame, exclude: set):
-        candidates = []
-        for c in df.columns:
-            if c in exclude:
-                continue
-            s = df[c].astype(str).str.strip().str.lower()
-            good = s.isin({"sim","s","nao","não","n","0","1","true","false","t","f","yes","y","no"})
-            score = good.mean()
-            candidates.append((score, c))
-        candidates.sort(reverse=True)
-        return candidates[0][1] if candidates and candidates[0][0] >= 0.5 else None
-
-    def infer_client_col(df: pd.DataFrame, exclude: set):
-        for c in df.columns:
-            if c in exclude: 
-                continue
-            if re.search(r"(cliente|empresa)", norm(c)):
-                return c
-        best, best_card = None, 0
-        for c in df.columns:
-            if c in exclude or pd.api.types.is_numeric_dtype(df[c]):
-                continue
-            card = df[c].nunique(dropna=True)
-            if 1 < card < len(df) and card > best_card:
-                best, best_card = c, card
-        return best
-
-    if not date_col:
-        date_col = infer_date_col(base)
-    if not cliente_col:
-        cliente_col = infer_client_col(base, exclude={date_col} if date_col else set())
-    if not mov_col:
-        mov_col = infer_mov_col(base, exclude={date_col, cliente_col} if date_col and cliente_col else set())
-
-    missing = []
-    if not date_col:    missing.append("Data")
-    if not cliente_col: missing.append("Cliente/Empresa")
-    if not mov_col:     missing.append("Teve movimentação (Sim/Não)")
-    st.write("🔎 Colunas escolhidas:", {"Data": date_col, "Cliente": cliente_col, "Mov": mov_col})
-    if missing:
-        raise ValueError(
-            "Não encontrei as colunas esperadas: "
-            + ", ".join(missing)
-            + f". Colunas no CSV: {list(base.columns)}.\n"
-            "Dica: ajuste os nomes na planilha OU adicione variações no código."
-        )
-
     out = pd.DataFrame({
         "Data":    pd.to_datetime(base[date_col].astype(str), dayfirst=True, errors="coerce"),
         "Cliente": base[cliente_col].astype(str).str.strip(),
@@ -134,7 +70,11 @@ def load_data():
 
     out = out.dropna(subset=["Data", "Cliente"])
     out["Data"] = out["Data"].dt.floor("D")
-    out = out.groupby(["Data", "Cliente"], as_index=False)["Mov"].max()
+
+    # 🔑 chave: cria coluna "Semana" sempre alinhada à segunda-feira
+    out["Semana"] = out["Data"].dt.to_period("W-MON").apply(lambda p: p.start_time)
+
+    out = out.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
 # ===== Carrega =====
@@ -202,17 +142,17 @@ with tab_sem:
     if dfp.empty:
         st.info("Não há dados no período/cliente(s) selecionado(s).")
     else:
-        semanas = sorted(dfp["Data"].dt.to_period("W-MON").unique())
+        semanas = sorted(dfp["Semana"].unique())
         sem_padrao = max(semanas)
         idx_padrao = semanas.index(sem_padrao)
         sem_sel = st.selectbox(
             "Semana (início na segunda-feira)",
             options=semanas,
             index=idx_padrao,
-            format_func=lambda p: f"{p.start_time.date()} – {(p.start_time + pd.Timedelta(days=4)).date()}"
+            format_func=lambda s: f"{s.date()} – {(s + pd.Timedelta(days=4)).date()}"
         )
 
-        dfw = dfp[dfp["Data"].dt.to_period("W-MON") == sem_sel].copy()
+        dfw = dfp[dfp["Semana"] == sem_sel].copy()
         dfw["dow"] = dfw["Data"].dt.weekday
         dfw = dfw[dfw["dow"] <= 4]
 
@@ -246,7 +186,8 @@ with tab_rank:
     if dfp.empty:
         st.info("Não há dados para o ranking nessa semana.")
     else:
-        dfw = dfp[dfp["Data"].dt.to_period("W-MON") == sem_sel].copy()
+        # usa mesma seleção de semana que o heatmap
+        dfw = dfp[dfp["Semana"] == sem_sel].copy()
         resumo = dfw.groupby("Cliente", as_index=False)["Mov"].sum().sort_values("Mov", ascending=False)
 
         col1, col2 = st.columns(2)
@@ -265,4 +206,4 @@ if st.button("Atualizar dados agora"):
     load_data.clear()
     st.rerun()
 
-st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta, se preciso. Cores: NÃO=azul claro, SIM=azul escuro.")
+st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
