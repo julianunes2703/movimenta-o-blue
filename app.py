@@ -258,7 +258,7 @@ else:
         if delta < -0.2:
             st.error(f"📉 Queda de {abs(delta*100):.1f}% nas movimentações em relação à semana anterior.")
         elif delta > 0.2:
-            st.success(f"📈 Aumento de {delta*100):.1f}% nas movimentações em relação à semana anterior.")
+            st.success(f"📈 Aumento de {delta*100:.1f}% nas movimentações em relação à semana anterior.")
         else:
             st.info("📊 Volume de movimentações estável em relação à semana anterior.")
 
