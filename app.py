@@ -199,6 +199,69 @@ with tab_rank:
             st.markdown("### 🔻 Menos movimentações")
             st.dataframe(resumo.tail(10).sort_values("Mov", ascending=True))
 
+# ===== Tendência =====
+st.divider()
+st.header("📊 Tendência de movimentações")
+
+if not dfp.empty:
+    # --- tendência diária
+    trend_day = dfp.groupby("Data", as_index=False)["Mov"].sum()
+    chart_trend_day = alt.Chart(trend_day).mark_line(point=True).encode(
+        x=alt.X("Data:T", title="Data"),
+        y=alt.Y("Mov:Q", title="Total de movimentações"),
+        tooltip=["Data:T", "Mov:Q"]
+    ).properties(title="Tendência diária")
+
+    st.altair_chart(chart_trend_day, use_container_width=True)
+
+    # --- tendência semanal
+    trend_week = dfp.groupby("Semana", as_index=False)["Mov"].sum()
+    chart_trend_week = alt.Chart(trend_week).mark_bar().encode(
+        x=alt.X("Semana:T", title="Semana (início na segunda)"),
+        y=alt.Y("Mov:Q", title="Total de movimentações"),
+        tooltip=["Semana:T", "Mov:Q"]
+    ).properties(title="Tendência semanal")
+
+    st.altair_chart(chart_trend_week, use_container_width=True)
+
+# ===== Alertas =====
+st.divider()
+st.header("🔔 Alertas automáticos")
+
+if dfp.empty:
+    st.info("Sem dados no período selecionado para gerar alertas.")
+else:
+    sem_atual = dfp["Semana"].max()
+    sem_ant = sem_atual - pd.Timedelta(days=7)
+
+    df_atual = dfp[dfp["Semana"] == sem_atual]
+    df_ant   = dfp[dfp["Semana"] == sem_ant]
+
+    ativos_atual = set(df_atual["Cliente"].unique())
+    ativos_ant   = set(df_ant["Cliente"].unique())
+
+    inativos = ativos_ant - ativos_atual
+    novos = ativos_atual - ativos_ant
+
+    if inativos:
+        st.warning(f"⚠️ {len(inativos)} clientes ficaram **inativos** nesta semana: {', '.join(list(inativos)[:10])}...")
+    else:
+        st.success("✅ Nenhum cliente ficou inativo nesta semana.")
+
+    if novos:
+        st.info(f"ℹ️ {len(novos)} clientes tiveram **primeira movimentação** nesta semana: {', '.join(list(novos)[:10])}...")
+
+    mov_atual = df_atual["Mov"].sum()
+    mov_ant   = df_ant["Mov"].sum()
+    if mov_ant > 0:
+        delta = (mov_atual - mov_ant) / mov_ant
+        if delta < -0.2:
+            st.error(f"📉 Queda de {abs(delta*100):.1f}% nas movimentações em relação à semana anterior.")
+        elif delta > 0.2:
+            st.success(f"📈 Aumento de {delta*100):.1f}% nas movimentações em relação à semana anterior.")
+        else:
+            st.info("📊 Volume de movimentações estável em relação à semana anterior.")
+
 # ===== Botão de recarregar =====
 st.divider()
 if st.button("Atualizar dados agora"):
