@@ -71,8 +71,8 @@ def load_data():
     out = out.dropna(subset=["Data", "Cliente"])
     out["Data"] = out["Data"].dt.floor("D")
 
-    # 🔑 chave: cria coluna "Semana" sempre alinhada à segunda-feira
-    out["Semana"] = out["Data"].dt.to_period("W-MON").apply(lambda p: p.start_time)
+    # 🔑 Semana = sempre a segunda-feira da semana
+    out["Semana"] = out["Data"] - pd.to_timedelta(out["Data"].dt.weekday, unit="D")
 
     out = out.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
@@ -186,7 +186,6 @@ with tab_rank:
     if dfp.empty:
         st.info("Não há dados para o ranking nessa semana.")
     else:
-        # usa mesma seleção de semana que o heatmap
         dfw = dfp[dfp["Semana"] == sem_sel].copy()
         resumo = dfw.groupby("Cliente", as_index=False)["Mov"].sum().sort_values("Mov", ascending=False)
 
