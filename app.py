@@ -321,7 +321,7 @@ else:
     dmin_r, dmax_r = df_reunioes["Data"].min().date(), df_reunioes["Data"].max().date()
     c1_r, c2_r = st.columns(2)
     start_r = c1_r.date_input("Data inicial (Reuniões)", value=dmin_r, min_value=dmin_r, max_value=dmax_r, key="start_r")
-    end_r   = c2_r.date_input("Data final (Reuniões)",    value=dmax_r, min_value=dmin_r, max_value=dmax_r, key="end_r")
+    end_r = c2_r.date_input("Data final (Reuniões)", value=dmax_r, min_value=dmin_r, max_value=dmax_r, key="end_r")
 
     mask_r = (df_reunioes["Data"].dt.date >= start_r) & (df_reunioes["Data"].dt.date <= end_r)
     dfp_r = df_reunioes.loc[mask_r].copy()
@@ -376,6 +376,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
 
