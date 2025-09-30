@@ -215,34 +215,34 @@ else:
     tab_dia, tab_sem, tab_rank = st.tabs(["📅 Por dia", "🗓️ Semanal (Seg–Sex)", "🏆 Ranking semanal"])
 
     # ---------- Heatmap diário (Original) ----------
-    with tab_dia:
-        all_dates   = pd.date_range(start, end, freq="D")
-        all_clients = sorted(dfp["Cliente"].unique().tolist())
-        if not all_clients:
-            st.info("Nenhum cliente no período/filtro selecionado.")
-        else:
-            grid = pd.MultiIndex.from_product([all_dates, all_clients], names=["Data", "Cliente"]).to_frame(index=False)
-            data_final = grid.merge(dfp[["Data", "Cliente", "Mov"]], on=["Data", "Cliente"], how="left")
-            data_final["Mov"] = data_final["Mov"].fillna(0).astype(int)
+with tab_dia:
+    all_dates = pd.date_range(start, end, freq="D")
+    all_clients = sorted(dfp["Cliente"].unique().tolist())
+    if not all_clients:
+        st.info("Nenhum cliente no período/filtro selecionado.")
+    else:
+        grid = pd.MultiIndex.from_product([all_dates, all_clients], names=["Data", "Cliente"]).to_frame(index=False)
+        data_final = grid.merge(dfp[["Data", "Cliente", "Mov"]], on=["Data", "Cliente"], how="left")
+        data_final["Mov"] = data_final["Mov"].fillna(0).astype(int)
 
-            height = min(24 * max(1, len(all_clients)) + 80, 1000)
+        height = min(24 * max(1, len(all_clients)) + 80, 1000)
 
-            chart = alt.Chart(data_final).mark_rect(stroke=GRID_STROKE, strokeWidth=0.7).encode(
-                x=alt.X("yearmonthdate(Data):O", title="Data"),
-                y=alt.Y("Cliente:N", sort=all_clients, title="Cliente"),
-                color=alt.Color(
-                    "Mov:Q",
-                    scale=alt.Scale(domain=[0, 1], range=[COLOR_NO, COLOR_YES]),
-                    legend=None
-                ),
-                tooltip=[
-                    alt.Tooltip("yearmonthdate(Data):O", title="Data"),
-                    alt.Tooltip("Cliente:N"),
-                    alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")
-                ]
-            ).properties(height=height)
+        chart = alt.Chart(data_final).mark_rect(stroke=GRID_STROKE, strokeWidth=0.7).encode(
+            x=alt.X("yearmonthdate(Data):O", title="Data"),
+            y=alt.Y("Cliente:N", sort=all_clients, title="Cliente"),
+            color=alt.Color(
+                "Mov:Q",
+                scale=alt.Scale(domain=[0, 1], range=[COLOR_NO, COLOR_YES]),
+                legend=None
+            ),
+            tooltip=[
+                alt.Tooltip("yearmonthdate(Data):O", title="Data"),
+                alt.Tooltip("Cliente:N"),
+                alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")
+            ]
+        ).properties(height=height)
 
-            st.altair_chart(chart, use_container_width=True)
+        st.altair_chart(chart, use_container_width=True)
 
     # ---------- Grade semanal (Original) ----------
     with tab_sem:
@@ -414,6 +414,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
 
