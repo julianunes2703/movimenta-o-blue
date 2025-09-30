@@ -309,44 +309,6 @@ with tab_dia:
                 st.markdown("### 🔻 Menos movimentações")
                 st.dataframe(resumo.tail(10).sort_values("Mov", ascending=True))
 
-    # ===== Alertas (Original) =====
-    st.divider()
-    st.header("🔔 Alertas automáticos")
-
-    if dfp.empty:
-        st.info("Sem dados no período selecionado para gerar alertas.")
-    else:
-        sem_atual = dfp["Semana"].max()
-        sem_ant = sem_atual - pd.Timedelta(days=7)
-
-        df_atual = dfp[dfp["Semana"] == sem_atual]
-        df_ant   = dfp[dfp["Semana"] == sem_ant]
-
-        ativos_atual = set(df_atual["Cliente"].unique())
-        ativos_ant   = set(df_ant["Cliente"].unique())
-
-        inativos = ativos_ant - ativos_atual
-        novos = ativos_atual - ativos_ant
-
-        if inativos:
-            st.warning(f"⚠️ {len(inativos)} clientes ficaram **inativos** nesta semana: {', '.join(list(inativos)[:10])}...")
-        else:
-            st.success("✅ Nenhum cliente ficou inativo nesta semana.")
-
-        if novos:
-            st.info(f"ℹ️ {len(novos)} clientes tiveram **primeira movimentação** nesta semana: {', '.join(list(novos)[:10])}...")
-
-        mov_atual = df_atual["Mov"].sum()
-        mov_ant   = df_ant["Mov"].sum()
-        if mov_ant > 0:
-            delta = (mov_atual - mov_ant) / mov_ant
-            if delta < -0.2:
-                st.error(f"📉 Queda de {abs(delta*100):.1f}% nas movimentações em relação à semana anterior.")
-            elif delta > 0.2:
-                st.success(f"📈 Aumento de {delta*100:.1f}% nas movimentações em relação à semana anterior.")
-            else:
-                st.info("📊 Volume de movimentações estável em relação à semana anterior.")
-
 
 ---
 # ## Análise 2: Ocorrência de Reuniões Únicas (Adicional)
@@ -414,6 +376,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
 
