@@ -23,12 +23,13 @@ filtered_df = df[(df['Data'] >= start_date) & (df['Data'] <= end_date)]
 # Remover duplicatas com base na 'Data' e 'Título' da reunião
 filtered_df = filtered_df.drop_duplicates(subset=['Data', 'Título'])
 
-# Substituir e-mails por nomes (se possível, se houver uma lista de mapeamento)
-# Para esse exemplo, vamos considerar que você já tem uma coluna com nomes. Se não, podemos melhorar com mais manipulação de dados.
-
-# Exibir gráfico de participação dos funcionários
+# Mostrar gráfico de participação dos funcionários
 # Contar o número de reuniões em que cada participante esteve
-participant_counts = filtered_df['Participantes'].str.split(",").explode().str.strip().value_counts().reset_index()
+# Dividir os participantes
+participants = filtered_df['Participantes'].str.split(",").explode().str.strip()
+
+# Contar a participação de cada pessoa
+participant_counts = participants.value_counts().reset_index()
 participant_counts.columns = ['Participante', 'Reuniões']
 
 # Gráfico de barras com a quantidade de reuniões por participante
@@ -62,6 +63,7 @@ st.write("Detalhamento das Reuniões por Participante:")
 # Agrupar e exibir reuniões por participante
 for participant in participant_counts['Participante']:
     st.write(f"**{participant}**:")
+    # Filtrar todas as reuniões em que o participante esteve presente
     participant_meetings = filtered_df[filtered_df['Participantes'].str.contains(participant)]
     for _, row in participant_meetings.iterrows():
         st.write(f"- **{row['Título']}** em {row['Data'].strftime('%d/%m/%Y')}")
