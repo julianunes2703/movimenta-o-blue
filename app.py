@@ -89,9 +89,22 @@ def load_data():
 @st.cache_data(ttl=CACHE_TTL)
 def load_reunioes_data():
     reunioes_df = pd.read_csv(CSV_REUNIOES_URL)
-    reunioes_df['Início'] = pd.to_datetime(reunioes_df['Início'])
+    
+    # Certificando-se de que os nomes das colunas estão corretos
+    reunioes_df.columns = [col.strip() for col in reunioes_df.columns]  # Remove espaços extras
+
+    # Verificar se a coluna 'Inicio' existe
+    if 'Inicio' in reunioes_df.columns:
+        reunioes_df['Início'] = pd.to_datetime(reunioes_df['Inicio'])  # Converte para datetime
+    else:
+        st.error("A coluna 'Inicio' não foi encontrada na planilha.")
+        return pd.DataFrame()  # Retorna um DataFrame vazio caso a coluna não seja encontrada
+    
+    # Converte a coluna 'Fim' para datetime
     reunioes_df['Fim'] = pd.to_datetime(reunioes_df['Fim'])
+
     return reunioes_df
+
 
 # ===== Carrega =====
 try:
@@ -246,4 +259,5 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
+
 
