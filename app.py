@@ -6,7 +6,7 @@ import re
 
 # ===== URL CSV PUBLICADO =====
 CSV_MOV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
-CSV_REUNIOES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pubhtml?gid=212895287&single=true"
+CSV_REUNIOES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pub?gid=212895287&single=true&output=csv"
 CACHE_TTL = 900  # 15 min
 
 # ===== Cores =====
@@ -246,3 +246,4 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
+
