@@ -14,7 +14,7 @@ COLOR_YES  = "#0000CD"
 GRID_STROKE = "#E0E0E0"
 
 # ===== Clientes excluídos =====
-CLIENTES_EXCLUIDOS = {"XRally"}   # coloque aqui outros clientes que não devem aparecer
+CLIENTES_EXCLUIDOS = {"XRally", "Arcate"}   # coloque aqui outros clientes que não devem aparecer
 
 # ==============================================
 
@@ -270,4 +270,5 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
+
 
