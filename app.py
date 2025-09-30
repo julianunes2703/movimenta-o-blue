@@ -158,7 +158,7 @@ def load_data_reunioes():
 
 # ===== Carrega DADOS ORIGINAIS =====
 try:
-    df = load_data()
+    df = load_data()
 except Exception as e:
     # A mensagem de erro é tratada dentro de load_data se a URL falhar
     pass 
@@ -413,6 +413,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
 
