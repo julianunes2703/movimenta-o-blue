@@ -9,7 +9,7 @@ import re
 # =========================================================================
 
 # URL da planilha ORIGINAL (Movimentação por Cliente) - SUBSTITUA AQUI!
-CSV_URL_MOVIMENTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTfWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
+CSV_URL_MOVIMENTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 
 # URL da planilha NOVA (Ocorrência de Reuniões) - JÁ COM SEU LINK CORRIGIDO
 CSV_URL_REUNIAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pub?gid=212895287&single=true&output=csv"
@@ -413,3 +413,4 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
