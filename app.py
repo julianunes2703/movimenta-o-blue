@@ -13,16 +13,18 @@ CSV_URL_MOVIMENTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4Dyi
 
 # URL da planilha NOVA (Ocorrência de Reuniões) - JÁ COM SEU LINK CORRIGIDO
 CSV_URL_REUNIAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pub?gid=212895287&single=true&output=csv"
-
 CACHE_TTL = 900  # 15 min
 
+
 # ===== Cores =====
-COLOR_NO   = "#87CEEB"   
-COLOR_YES  = "#0000CD"   
+COLOR_NO   = "#87CEEB"   
+COLOR_YES  = "#0000CD"   
 GRID_STROKE = "#E0E0E0"
 
 # ===== Clientes excluídos =====
-CLIENTES_EXCLUIDOS = {"XRally"}   # coloque aqui outros clientes que não devem aparecer
+CLIENTES_EXCLUIDOS = {"XRally"}   # coloque aqui outros clientes que não devem aparecer
+
+
 st.set_page_config(page_title="Movimentação × Reuniões", layout="wide")
 st.title("Movimentação por Cliente vs. Ocorrência de Reuniões")
 
@@ -408,4 +410,5 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
