@@ -6,7 +6,7 @@ import re
 
 # ===== URL CSV PUBLICADO =====
 CSV_MOV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
-CSV_REUNIOES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pub?gid=212895287&single=true&output=csv"
+CSV_REUNIOES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
 CACHE_TTL = 900  # 15 min
 
 # ===== Cores =====
@@ -50,7 +50,6 @@ def try_header_from_first_row(df: pd.DataFrame) -> pd.DataFrame:
 # --------------------------
 @st.cache_data(ttl=CACHE_TTL)
 def load_data():
-    # Carrega dados de movimentação
     base = pd.read_csv(CSV_MOV_URL)
     base = try_header_from_first_row(base)
 
@@ -89,22 +88,9 @@ def load_data():
 @st.cache_data(ttl=CACHE_TTL)
 def load_reunioes_data():
     reunioes_df = pd.read_csv(CSV_REUNIOES_URL)
-    
-    # Certificando-se de que os nomes das colunas estão corretos
-    reunioes_df.columns = [col.strip() for col in reunioes_df.columns]  # Remove espaços extras
-
-    # Verificar se a coluna 'Inicio' existe
-    if 'Inicio' in reunioes_df.columns:
-        reunioes_df['Início'] = pd.to_datetime(reunioes_df['Inicio'])  # Converte para datetime
-    else:
-        st.error("A coluna 'Inicio' não foi encontrada na planilha.")
-        return pd.DataFrame()  # Retorna um DataFrame vazio caso a coluna não seja encontrada
-    
-    # Converte a coluna 'Fim' para datetime
+    reunioes_df['Início'] = pd.to_datetime(reunioes_df['Inicio'])
     reunioes_df['Fim'] = pd.to_datetime(reunioes_df['Fim'])
-
     return reunioes_df
-
 
 # ===== Carrega =====
 try:
@@ -157,7 +143,7 @@ mask_reun = (reunioes_df['Início'].dt.date >= start) & (reunioes_df['Fim'].dt.d
 reunioes_filtradas = reunioes_df[mask_reun]
 
 if not reunioes_filtradas.empty:
-    st.dataframe(reunioes_filtradas[['Agenda', 'Título', 'Início', 'Fim', 'Participantes']])
+    st.dataframe(reunioes_filtradas[['Título', 'Início', 'Fim', 'Participantes']])
 else:
     st.info("Não há reuniões para o período selecionado.")
 
@@ -259,5 +245,3 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
-
-
