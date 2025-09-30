@@ -5,7 +5,8 @@ import unicodedata
 import re
 
 # ===== URL CSV PUBLICADO =====
-CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
+CSV_MOV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
+CSV_REUNIOES_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pubhtml?gid=212895287&single=true"
 CACHE_TTL = 900  # 15 min
 
 # ===== Cores =====
@@ -49,7 +50,8 @@ def try_header_from_first_row(df: pd.DataFrame) -> pd.DataFrame:
 # --------------------------
 @st.cache_data(ttl=CACHE_TTL)
 def load_data():
-    base = pd.read_csv(CSV_URL)
+    # Carrega dados de movimentação
+    base = pd.read_csv(CSV_MOV_URL)
     base = try_header_from_first_row(base)
 
     colmap = {norm(c): c for c in base.columns}
@@ -84,9 +86,17 @@ def load_data():
 
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
+@st.cache_data(ttl=CACHE_TTL)
+def load_reunioes_data():
+    reunioes_df = pd.read_csv(CSV_REUNIOES_URL)
+    reunioes_df['Início'] = pd.to_datetime(reunioes_df['Início'])
+    reunioes_df['Fim'] = pd.to_datetime(reunioes_df['Fim'])
+    return reunioes_df
+
 # ===== Carrega =====
 try:
     df = load_data()
+    reunioes_df = load_reunioes_data()
 except Exception as e:
     st.error("❌ Falha ao carregar os dados. Confira o gid/URL e os cabeçalhos.")
     st.exception(e)
@@ -128,6 +138,16 @@ if not dfp.empty:
 else:
     st.info("Nenhum dado para o período selecionado.")
 
+# ===== Reuniões do Dia =====
+st.header("📅 Reuniões do Dia")
+mask_reun = (reunioes_df['Início'].dt.date >= start) & (reunioes_df['Fim'].dt.date <= end)
+reunioes_filtradas = reunioes_df[mask_reun]
+
+if not reunioes_filtradas.empty:
+    st.dataframe(reunioes_filtradas[['Agenda', 'Título', 'Início', 'Fim', 'Participantes']])
+else:
+    st.info("Não há reuniões para o período selecionado.")
+
 # ===== Abas =====
 tab_dia, tab_sem, tab_rank = st.tabs(["📅 Por dia", "🗓️ Semanal (Seg–Sex)", "🏆 Ranking semanal"])
 
@@ -160,50 +180,6 @@ with tab_dia:
         ).properties(height=height)
 
         st.altair_chart(chart, use_container_width=True)
-
-# ---------- Grade semanal ----------
-with tab_sem:
-    st.subheader("Visão semanal (Seg–Sex)")
-
-    if dfp.empty:
-        st.info("Não há dados no período/cliente(s) selecionado(s).")
-    else:
-        semanas = sorted(dfp["Semana"].unique())
-        sem_padrao = max(semanas)
-        idx_padrao = semanas.index(sem_padrao)
-        sem_sel = st.selectbox(
-            "Semana (início na segunda-feira)",
-            options=semanas,
-            index=idx_padrao,
-            format_func=lambda s: f"{s.date()} – {(s + pd.Timedelta(days=4)).date()}"
-        )
-
-        dfw = dfp[dfp["Semana"] == sem_sel].copy()
-        dfw["dow"] = dfw["Data"].dt.weekday
-        dfw = dfw[dfw["dow"] <= 4]
-
-        clientes_semana = sorted(dfp["Cliente"].unique().tolist())
-
-        grid = pd.MultiIndex.from_product([clientes_semana, range(5)], names=["Cliente", "dow"]).to_frame(index=False)
-        agg = dfw.groupby(["Cliente", "dow"], as_index=False)["Mov"].max()
-        mat = grid.merge(agg, on=["Cliente", "dow"], how="left").fillna({"Mov": 0})
-        mat["Dia"] = mat["dow"].map({0: "Seg.", 1: "Ter.", 2: "Qua.", 3: "Qui.", 4: "Sex."})
-
-        height = min(24 * max(1, len(clientes_semana)) + 80, 1000)
-
-        chart_semana = alt.Chart(mat).mark_rect(stroke=GRID_STROKE, strokeWidth=0.7).encode(
-            x=alt.X("Dia:N", sort=["Seg.", "Ter.", "Qua.", "Qui.", "Sex."], title=""),
-            y=alt.Y("Cliente:N", sort=clientes_semana, title=""),
-            color=alt.Color(
-                "Mov:Q",
-                scale=alt.Scale(domain=[0, 1], range=[COLOR_NO, COLOR_YES]),
-                legend=None
-            ),
-            tooltip=[alt.Tooltip("Cliente:N"), alt.Tooltip("Dia:N"),
-                     alt.Tooltip("Mov:Q", title="Teve movimentação (1=Sim, 0=Não)")]
-        ).properties(height=height)
-
-        st.altair_chart(chart_semana, use_container_width=True)
 
 # ---------- Ranking semanal ----------
 with tab_rank:
@@ -270,4 +246,3 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
-
