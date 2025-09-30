@@ -62,19 +62,19 @@ def load_data():
                 return colmap[key]
         return None
 
-    # Mapeamento para colunas (adaptado para a sua planilha de agenda)
+    # Mapeamento para colunas (agenda)
     date_col      = pick(["Início", "Data", "C"])
     title_col     = pick(["Título", "B"])
     end_col       = pick(["Fim", "D"])
     attendees_col = pick(["Participantes", "E"])
     mov_col       = pick(["Teve movimentação", "Movimentação", "Mov"])
-    cliente_source_col = pick(["Cliente", "Empresa", "Participantes", "A"]) # Coluna A contém o primeiro email
+    cliente_source_col = pick(["Cliente", "Empresa", "Participantes", "A"])
 
 
     if date_col is None or cliente_source_col is None:
         raise ValueError("Colunas essenciais (Data/Início ou Cliente/Participantes) não encontradas. Verifique o GID e os cabeçalhos.")
 
-    # 1. Cria o DataFrame Detalhado (df_detailed_temp) com todas as informações
+    # 1. Cria o DataFrame Detalhado (df_detailed)
     df_detailed_temp = pd.DataFrame({
         "Data_Completa": pd.to_datetime(base[date_col].astype(str), dayfirst=True, errors="coerce"),
         "Título": base[title_col].astype(str).str.strip() if title_col else "Sem Título",
@@ -86,7 +86,7 @@ def load_data():
     df_detailed_temp = df_detailed_temp.dropna(subset=["Data_Completa"])
     df_detailed_temp["Data"] = df_detailed_temp["Data_Completa"].dt.floor("D")
     
-    # Lógica de Movimentação (toda reunião é uma movimentação)
+    # Lógica de Movimentação
     if mov_col:
         df_detailed_temp["Mov"] = base[mov_col].map(to_bin).astype(int)
     else:
@@ -95,7 +95,6 @@ def load_data():
     # Lógica de Cliente (Extrai o nome de usuário do primeiro e-mail da coluna)
     cliente_source = base[cliente_source_col].astype(str).str.strip().str.lower()
     if norm(cliente_source_col) in ["participantes", "e", "a"]:
-        # Extrai o nome de usuário do primeiro e-mail (ex: "fulano@..." -> "fulano")
         cliente_source = cliente_source.str.split(',').str[0].str.split('@').str[0].str.strip()
     
     df_detailed_temp["Cliente"] = cliente_source
@@ -105,10 +104,17 @@ def load_data():
     # Remove clientes excluídos do DataFrame detalhado
     excluded_clients = [c.lower() for c in CLIENTES_EXCLUIDOS]
     df_detailed_temp = df_detailed_temp[~df_detailed_temp["Cliente"].isin(excluded_clients)]
-    df_detailed = df_detailed_temp.copy().reset_index(drop=True)
+    
+    # Garante que a coluna Cliente é string no detalhado (PREVENÇÃO DE ERRO)
+    df_detailed = df_detailed_temp.copy()
+    df_detailed["Cliente"] = df_detailed["Cliente"].astype(str)
     
     # 2. Cria o DataFrame Agregado (df_agg) para os gráficos de calor
-    df_agg = df_detailed.copy()
+    df_agg = df_detailed[["Data", "Cliente", "Mov"]].copy()
+    
+    # Garante que Cliente é string no agregado (PREVENÇÃO DE ERRO)
+    df_agg["Cliente"] = df_agg["Cliente"].astype(str) 
+    
     df_agg["Semana"] = df_agg["Data"] - pd.to_timedelta(df_agg["Data"].dt.weekday, unit="D")
     df_agg = df_agg.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
 
@@ -119,7 +125,7 @@ def load_data():
 try:
     df, df_detailed_base = load_data() 
 except Exception as e:
-    st.error("❌ Falha ao carregar os dados. Confira o gid/URL e os cabeçalhos.")
+    st.error("❌ Falha ao carregar os dados. Confira o gid/URL e os cabeçalhos. (Erro: " + str(e) + ")")
     st.exception(e)
     st.stop()
 
@@ -178,11 +184,20 @@ with tab_dia:
     else:
         # --- 1. HEATMAP ---
         st.subheader("Visualização Diária (Heatmap)")
+        
         all_dates  = pd.to_datetime(pd.date_range(start, end, freq="D"))
         all_clients = sorted(dfp["Cliente"].unique().tolist())
         
+        # Cria o grid com tipos consistentes
         grid = pd.MultiIndex.from_product([all_dates, all_clients], names=["Data", "Cliente"]).to_frame(index=False)
-        data_final = grid.merge(dfp[["Data", "Cliente", "Mov"]], on=["Data", "Cliente"], how="left")
+        grid["Cliente"] = grid["Cliente"].astype(str) # Garante que Cliente é string
+        
+        # DataFrame dfp para mesclagem, garantindo tipos
+        dfp_merge = dfp[["Data", "Cliente", "Mov"]].copy()
+        dfp_merge["Cliente"] = dfp_merge["Cliente"].astype(str)
+        
+        # A mesclagem deve funcionar agora
+        data_final = grid.merge(dfp_merge, on=["Data", "Cliente"], how="left")
         data_final["Mov"] = data_final["Mov"].fillna(0).astype(int)
 
         height = min(24 * max(1, len(all_clients)) + 80, 1000)
@@ -214,7 +229,6 @@ with tab_dia:
         start_summary = df_detailed_filtered["Data"].min().date()
         end_summary = df_detailed_filtered["Data"].max().date()
         
-        # Seleção de data para o resumo
         summary_date = st.date_input(
             "Selecione o dia para ver os detalhes:",
             value=end_summary,
@@ -222,7 +236,6 @@ with tab_dia:
             max_value=end_summary
         )
 
-        # Filtra o detalhe pelo dia selecionado
         summary_mask_date = df_detailed_filtered["Data"].dt.date == summary_date
         
         df_summary = df_detailed_filtered.loc[summary_mask_date].copy()
@@ -298,7 +311,6 @@ with tab_rank:
     if dfp.empty:
         st.info("Não há dados para o ranking nessa semana.")
     else:
-        # Usa a mesma semana selecionada na aba anterior
         dfw = dfp[dfp["Semana"] == sem_sel].copy() 
         resumo = dfw.groupby("Cliente", as_index=False)["Mov"].sum().sort_values("Mov", ascending=False)
         
@@ -342,17 +354,14 @@ else:
         inativos = ativos_ant - ativos_atual
         novos = ativos_atual - ativos_ant
 
-        # Alerta Inativos
         if inativos:
             st.warning(f"⚠️ {len(inativos)} clientes ficaram **inativos** (não movimentaram) em {sem_atual.date()}: {', '.join(list(inativos)[:5])}{'...' if len(inativos) > 5 else ''}")
         else:
             st.success(f"✅ Nenhum cliente que movimentou em {sem_ant.date()} ficou inativo na última semana ({sem_atual.date()}).")
 
-        # Alerta Novos
         if novos:
             st.info(f"ℹ️ {len(novos)} clientes tiveram **primeira movimentação** (relativa ao período analisado) em {sem_atual.date()}: {', '.join(list(novos)[:5])}{'...' if len(novos) > 5 else ''}")
 
-        # Alerta Volume
         mov_atual = df_atual["Mov"].sum()
         mov_ant   = df_ant["Mov"].sum()
         
