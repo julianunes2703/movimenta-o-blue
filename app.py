@@ -55,6 +55,9 @@ def try_header_from_first_row(df: pd.DataFrame, expected_hits: set) -> pd.DataFr
 
 # --------------------------
 # ===== Lógica de Carregamento ORIGINAL (Movimentação por Cliente) =====
+
+
+    # ===== Lógica de Carregamento ORIGINAL (Movimentação por Cliente) =====
 @st.cache_data(ttl=CACHE_TTL)
 def load_data():
     # Hits originais (para a análise de cliente)
@@ -78,18 +81,18 @@ def load_data():
                 return colmap[key]
         return None
 
-    date_col    = pick(["Data", "date", "DATA", "Dia"])
+    date_col = pick(["Data", "date", "DATA", "Dia"])
     cliente_col = pick(["Cliente", "Empresa", "Cliente/Empresa", "Nome do Cliente", "Client"])
-    mov_col     = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
+    mov_col = pick(["Teve movimentação", "Teve movimentacao", "Movimentação", "Movimentacao", "Mov", "Movimentou", "teve movimento"])
     
     if not date_col or not cliente_col or not mov_col:
         st.warning("Colunas do modo 'Movimentação por Cliente' não encontradas.")
         return pd.DataFrame()
 
     out = pd.DataFrame({
-        "Data":    pd.to_datetime(base[date_col].astype(str), dayfirst=True, errors="coerce"),
+        "Data": pd.to_datetime(base[date_col].astype(str), dayfirst=True, errors="coerce"),
         "Cliente": base[cliente_col].astype(str).str.strip(),
-        "Mov":     base[mov_col].map(to_bin).astype(int)
+        "Mov": base[mov_col].map(to_bin).astype(int)
     })
 
     out = out.dropna(subset=["Data", "Cliente"])
@@ -410,5 +413,6 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
