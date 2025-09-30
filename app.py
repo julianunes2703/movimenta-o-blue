@@ -8,13 +8,13 @@ import re
 # ===== 1. URLS CSV PUBLICADAS (ATENÇÃO: SUBSTITUA O LINK ORIGINAL AQUI) =====
 # =========================================================================
 
-# URL da planilha ORIGINAL (Movimentação por Cliente) - SUBSTITUA AQUI!
-CSV_URL_MOVIMENTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTxWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv"
+# URL da planilha ORIGINAL (Movimentação por Cliente) - SUBSTITUA ESTE LINK (PENDING)!
+CSV_URL_MOVIMENTACAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQxA4DyiFFBv-scpSoVShs0udQphFfPA7pmOg47FTfWIQQqY93enCr-razUSo_IvpDi8l-0JfQef7-E/pub?gid=0&single=true&output=csv" 
 
 # URL da planilha NOVA (Ocorrência de Reuniões) - JÁ COM SEU LINK CORRIGIDO
 CSV_URL_REUNIAO = "https://docs.google.com/spreadsheets/d/e/2PACX-1vSsw_WO1DoVu76FQ7rhs1S8CPBo0FRQ7VmoCpZBGV9WTsRdZm7TduvnKQnTVKR40vbMzQU3ypTj8Ls7/pub?gid=212895287&single=true&output=csv"
-CACHE_TTL = 900  # 15 min
 
+CACHE_TTL = 900  # 15 min
 
 # ===== Cores =====
 COLOR_NO = "#87CEEB"
@@ -24,6 +24,7 @@ GRID_STROKE = "#E0E0E0"
 # ===== Clientes excluídos =====
 CLIENTES_EXCLUIDOS = {"XRally"}    # coloque aqui outros clientes que não devem aparecer
 
+# ==============================================
 
 st.set_page_config(page_title="Movimentação × Reuniões", layout="wide")
 st.title("Movimentação por Cliente vs. Ocorrência de Reuniões")
@@ -153,24 +154,22 @@ def load_data_reunioes():
 
     return out.sort_values(["Data", "Titulo"]).reset_index(drop=True)
 
-# ===== Carrega DADOS ORIGINAIS =====
+# ===== Carrega DADOS ORIGINAIS E REUNIÕES =====
 try:
     df = load_data()
 except Exception as e:
-    # A mensagem de erro é tratada dentro de load_data se a URL falhar
-    pass
+    pass 
 
-# ===== Carrega DADOS ADICIONAIS (Reuniões) =====
 try:
     df_reunioes = load_data_reunioes()
 except Exception as e:
-    # A mensagem de erro é tratada dentro de load_data_reunioes se a URL falhar
     pass
 
 # =========================================================================
 # --- SEÇÃO 1: MOVIMENTAÇÃO POR CLIENTE (ORIGINAL) ---
 # =========================================================================
 
+st.markdown("---")
 st.markdown("## Análise 1: Movimentação por Cliente")
 if df.empty:
     st.warning("A seção 'Movimentação por Cliente' não foi exibida. Verifique o link e os cabeçalhos da URL de Movimentação.")
@@ -344,12 +343,12 @@ else:
             else:
                 st.info("📊 Volume de movimentações estável em relação à semana anterior.")
 
-# ---
-# ## Análise 2: Ocorrência de Reuniões Únicas (Adicional)
-# ---
+# =========================================================================
+# --- SEÇÃO 2: OCORRÊNCIA DE REUNIÕES ÚNICAS (ADICIONAL) ---
+# =========================================================================
 
 st.markdown("---")
-st.header("Análise 2: Ocorrência de Reuniões Únicas (Adicional)")
+st.markdown("## Análise 2: Ocorrência de Reuniões Únicas")
 
 if df_reunioes.empty:
     st.warning("A seção 'Ocorrência de Reuniões' não foi exibida. Verifique o link e os cabeçalhos ('Data' e 'Título') da URL de Reuniões.")
@@ -412,5 +411,4 @@ if st.button("Atualizar dados agora"):
     load_data_reunioes.clear()
     st.rerun()
 
-st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
-
+st.caption("As URLs foram separadas em Movimentação e Reuniões. Lembre-se de substituir o link PENDING de Movimentação.")
