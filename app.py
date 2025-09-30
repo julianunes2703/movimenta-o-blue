@@ -182,7 +182,7 @@ else:
     dmin, dmax = df["Data"].min().date(), df["Data"].max().date()
     c1, c2 = st.columns(2)
     start = c1.date_input("Data inicial", value=dmin, min_value=dmin, max_value=dmax, key="start_mov")
-    end   = c2.date_input("Data final",   value=dmax, min_value=dmin, max_value=dmax, key="end_mov")
+    end = c2.date_input("Data final", value=dmax, min_value=dmin, max_value=dmax, key="end_mov")
 
     mask = (df["Data"].dt.date >= start) & (df["Data"].dt.date <= end)
     dfp = df.loc[mask].copy()
@@ -195,6 +195,7 @@ else:
     st.divider()
     st.header("📌 Resumo do período selecionado")
 
+    
     if not dfp.empty:
         total_clientes = dfp["Cliente"].nunique()
         total_mov = dfp["Mov"].sum()
@@ -413,6 +414,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("A URL da seção de Reuniões foi atualizada. Lembre-se de substituir o link `CSV_URL_MOVIMENTACAO` pela sua URL de Movimentação.")
+
 
 
 
