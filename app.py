@@ -236,6 +236,7 @@ with tab_rank:
             st.markdown("### 🔻 Menos movimentações")
             st.dataframe(resumo.tail(10).sort_values("Mov", ascending=True))
 
+
 # ===== Alertas =====
 st.divider()
 st.header("🔔 Alertas automáticos")
@@ -249,22 +250,42 @@ else:
     df_atual = dfp[dfp["Semana"] == sem_atual]
     df_ant   = dfp[dfp["Semana"] == sem_ant]
 
-    ativos_atual = set(df_atual["Cliente"].unique())
-    ativos_ant   = set(df_ant["Cliente"].unique())
+    # ✅ Ativo = teve movimentação (Mov == 1)
+    ativos_atual = set(df_atual.loc[df_atual["Mov"] == 1, "Cliente"])
+    ativos_ant   = set(df_ant.loc[df_ant["Mov"] == 1, "Cliente"])
 
-    inativos = ativos_ant - ativos_atual
-    novos = ativos_atual - ativos_ant
+    # Universo de clientes analisados: os que aparecem na semana atual OU na anterior
+    universo = set(pd.concat([df_atual["Cliente"], df_ant["Cliente"]]).unique())
+
+    # 🚫 Sem movimentação na semana atual (inclui quem nunca moveu nas duas semanas)
+    sem_mov_atual = sorted(universo - ativos_atual)
+
+    # ⬇️ Ficaram inativos = eram ativos na semana passada e não foram nesta
+    inativos = sorted(ativos_ant - ativos_atual)
+
+    # 🆕 Novos = passaram a ter movimentação nesta semana
+    novos = sorted(ativos_atual - ativos_ant)
+
+    # Mensagens
+    if sem_mov_atual:
+        st.warning(f"⚠️ {len(sem_mov_atual)} cliente(s) sem movimentação nesta semana.")
+        st.caption(", ".join(sem_mov_atual[:15]) + ("..." if len(sem_mov_atual) > 15 else ""))
+    else:
+        st.success("✅ Todos os clientes analisados tiveram movimentação nesta semana.")
 
     if inativos:
-        st.warning(f"⚠️ {len(inativos)} clientes ficaram **inativos** nesta semana: {', '.join(list(inativos)[:10])}...")
+        st.error(f"⬇️ {len(inativos)} cliente(s) perderam atividade em relação à semana passada.")
+        st.caption(", ".join(inativos[:15]) + ("..." if len(inativos) > 15 else ""))
     else:
-        st.success("✅ Nenhum cliente ficou inativo nesta semana.")
+        st.info("ℹ️ Ninguém perdeu atividade em relação à semana passada.")
 
     if novos:
-        st.info(f"ℹ️ {len(novos)} clientes tiveram **primeira movimentação** nesta semana: {', '.join(list(novos)[:10])}...")
+        st.info(f"🆕 {len(novos)} cliente(s) com primeira movimentação nesta semana.")
+        st.caption(", ".join(novos[:15]) + ("..." if len(novos) > 15 else ""))
 
-    mov_atual = df_atual["Mov"].sum()
-    mov_ant   = df_ant["Mov"].sum()
+    # 📊 Delta de volume
+    mov_atual = int(df_atual["Mov"].sum())
+    mov_ant   = int(df_ant["Mov"].sum())
     if mov_ant > 0:
         delta = (mov_atual - mov_ant) / mov_ant
         if delta < -0.2:
@@ -273,14 +294,10 @@ else:
             st.success(f"📈 Aumento de {delta*100:.1f}% nas movimentações em relação à semana anterior.")
         else:
             st.info("📊 Volume de movimentações estável em relação à semana anterior.")
+    else:
+        st.info("📊 Sem base de comparação: semana anterior com 0 movimentos.")
 
-# ===== Botão de recarregar =====
-st.divider()
-if st.button("Atualizar dados agora"):
-    load_data.clear()
-    st.rerun()
 
-st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
 
 
 
