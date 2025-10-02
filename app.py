@@ -77,11 +77,21 @@ def load_data():
     # 🔑 Semana = sempre a segunda-feira da semana
     out["Semana"] = out["Data"] - pd.to_timedelta(out["Data"].dt.weekday, unit="D")
 
-    out = out.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
+    # 🧹 Normaliza clientes para evitar duplicados
+    out["Cliente_norm"] = out["Cliente"].map(norm)
 
-    # 🚫 Remove clientes excluídos (normalizando nomes)
+    # 🚫 Remove clientes excluídos
     excluidos_norm = {norm(x) for x in CLIENTES_EXCLUIDOS}
-    out = out[~out["Cliente"].map(norm).isin(excluidos_norm)]
+    out = out[~out["Cliente_norm"].isin(excluidos_norm)]
+
+    # Agrupa usando Cliente_norm mas mantém 1 nome "oficial"
+    out = (
+        out.groupby(["Data", "Cliente_norm", "Semana"], as_index=False)
+        .agg({"Mov": "max", "Cliente": "first"})  # pega o primeiro nome encontrado
+    )
+
+    # renomeia para usar Cliente final
+    out = out.rename(columns={"Cliente": "Cliente"}).drop(columns=["Cliente_norm"])
 
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
@@ -271,6 +281,7 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
+
 
 
 
