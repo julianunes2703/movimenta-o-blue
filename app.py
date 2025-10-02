@@ -79,8 +79,9 @@ def load_data():
 
     out = out.groupby(["Data", "Cliente", "Semana"], as_index=False)["Mov"].max()
 
-    # 🚫 Remove clientes excluídos
-    out = out[~out["Cliente"].isin(CLIENTES_EXCLUIDOS)]
+    # 🚫 Remove clientes excluídos (normalizando nomes)
+    excluidos_norm = {norm(x) for x in CLIENTES_EXCLUIDOS}
+    out = out[~out["Cliente"].map(norm).isin(excluidos_norm)]
 
     return out.sort_values(["Data", "Cliente"]).reset_index(drop=True)
 
@@ -270,5 +271,6 @@ if st.button("Atualizar dados agora"):
     st.rerun()
 
 st.caption("Lendo CSV publicado (pub?output=csv&gid=...). Ajuste o gid para a aba correta. Cores: NÃO=azul claro, SIM=azul escuro.")
+
 
 
