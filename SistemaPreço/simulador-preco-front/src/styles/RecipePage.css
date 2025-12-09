@@ -1,0 +1,157 @@
+/* src/styles/RecipePage.css */
+
+.recipe-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.recipe-page h2 {
+  margin: 0;
+}
+
+.recipe-page p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.recipe-form {
+  margin-top: 8px;
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.recipe-header-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.recipe-form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 220px;
+}
+
+.recipe-form-group.small {
+  max-width: 220px;
+}
+
+.recipe-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.recipe-form-group select,
+.recipe-form-group input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+.recipe-form-group small {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.recipe-table-wrapper {
+  overflow-x: auto;
+}
+
+.recipe-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.recipe-table th,
+.recipe-table td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.recipe-table th {
+  background-color: #f3f4f6;
+}
+
+.recipe-table select,
+.recipe-table input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 4px 6px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.85rem;
+}
+
+.recipe-add-btn,
+.recipe-remove-btn {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.recipe-add-btn {
+  width: 100%;
+  text-align: left;
+}
+
+.recipe-remove-btn {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.recipe-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.total-card {
+  flex: 1;
+  min-width: 200px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  background-color: #ffffff;
+}
+
+.total-card .label {
+  display: block;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.total-card .value {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.recipe-actions {
+  margin-top: 8px;
+}
+
+.recipe-actions button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background-color: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}

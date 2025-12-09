@@ -1,0 +1,69 @@
+/* src/styles/ItemForm.css */
+
+.item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.item-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.item-form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 180px;
+}
+
+.item-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.item-form-group input,
+.item-form-group select {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+.item-form-group small {
+  margin-top: 2px;
+  font-size: 0.75rem;
+  color: #6b7280;
+}
+
+.item-form-checkbox {
+  justify-content: center;
+}
+
+.item-form-checkbox label {
+  font-weight: 500;
+}
+
+.item-form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+.item-form-actions button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.item-form-actions button.primary {
+  background-color: #2563eb;
+  color: white;
+  border-color: #2563eb;
+}

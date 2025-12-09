@@ -1,0 +1,125 @@
+/* src/styles/PricingPage.css */
+
+.pricing-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pricing-page h2 {
+  margin: 0;
+}
+
+.pricing-page p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.pricing-form {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.pricing-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.pricing-form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.pricing-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.pricing-form-group select,
+.pricing-form-group input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+.pricing-button {
+  align-self: flex-start;
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #2563eb;
+  background-color: #2563eb;
+  color: white;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.pricing-result {
+  margin-top: 8px;
+}
+
+.pricing-result h3 {
+  margin-top: 0;
+}
+
+.pricing-result-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+.result-card {
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  background-color: #f9fafb;
+}
+
+.result-card .label {
+  display: block;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.result-card .value {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.pricing-components {
+  margin-top: 16px;
+}
+
+.pricing-components table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.pricing-components th,
+.pricing-components td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.pricing-components th {
+  background-color: #f3f4f6;
+}
+
+.components-total {
+  margin-top: 8px;
+  font-size: 0.85rem;
+  color: #4b5563;
+}

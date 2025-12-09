@@ -1,0 +1,133 @@
+.profiles-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.profiles-form {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.profiles-form-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profiles-form-group {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 200px;
+}
+
+.profiles-form-group label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.profiles-form-group input {
+  padding: 6px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  font-size: 0.9rem;
+}
+
+.profiles-form-group.checkbox {
+  justify-content: center;
+}
+
+.profiles-form-group.checkbox label {
+  font-weight: 500;
+}
+
+.profiles-form-group.small {
+  max-width: 160px;
+}
+
+.profiles-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.profiles-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.profiles-actions button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.profiles-actions .primary {
+  background-color: #2563eb;
+  border-color: #2563eb;
+  color: white;
+}
+
+.profiles-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 8px;
+  margin-bottom: 8px;
+}
+
+.profiles-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.profiles-table th,
+.profiles-table td {
+  border: 1px solid #e5e7eb;
+  padding: 6px 8px;
+  text-align: left;
+}
+
+.profiles-table th {
+  background-color: #f3f4f6;
+}
+
+.profiles-table button {
+  padding: 4px 8px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+  margin-right: 4px;
+}
+
+.profiles-table button.danger {
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.reload-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.reload-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}

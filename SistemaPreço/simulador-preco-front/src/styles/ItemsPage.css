@@ -1,0 +1,104 @@
+/* src/styles/ItemsPage.css */
+
+.items-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.items-header h2 {
+  margin: 0;
+}
+
+.items-header p {
+  margin-top: 4px;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.items-form-section {
+  padding: 12px;
+  border-radius: 8px;
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.items-list-section {
+  margin-top: 8px;
+}
+
+.items-list-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.reload-button {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+
+.reload-button:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.items-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.items-table th,
+.items-table td {
+  border: 1px solid #e5e7eb;
+  padding: 8px;
+  text-align: left;
+}
+
+.items-table th {
+  background-color: #f3f4f6;
+}
+
+.inactive-row {
+  background-color: #fef2f2;
+}
+
+.table-button {
+  padding: 4px 8px;
+  margin-right: 4px;
+  border-radius: 6px;
+  border: 1px solid #d1d5db;
+  background-color: #ffffff;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.table-button.danger {
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.actions button {
+  margin-right: 6px;
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.delete-btn {
+  background-color: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+  border-radius: 5px;
+}
+
+.delete-btn:hover {
+  background-color: #fecaca;
+}
